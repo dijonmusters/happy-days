@@ -9,7 +9,6 @@ import {
   useFetcher,
   useLoaderData,
 } from "@remix-run/react";
-import { User } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import styles from "./styles/app.css";
 import supabase from "./utils/supabase";
@@ -30,17 +29,12 @@ export const loader = () => {
 
 export default function App() {
   const { env } = useLoaderData();
-  const [user, setUser] = useState<User | null>(null);
   const fetcher = useFetcher();
 
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user ?? null);
-        console.log("signed in client side");
-
         if (event === "SIGNED_IN" && session?.access_token) {
-          console.log("signing in server side");
           fetcher.submit(
             {
               accessToken: session.access_token,
@@ -72,7 +66,7 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet context={{ user }} />
+        <Outlet />
         <ScrollRestoration />
         <script
           dangerouslySetInnerHTML={{

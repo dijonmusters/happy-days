@@ -1,36 +1,41 @@
 import { json, LoaderFunction } from "@remix-run/cloudflare";
-import { useLoaderData, useOutletContext } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { User } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
-import { getSession } from "~/utils/cookies";
 import supabase from "~/utils/supabase";
+import withAuth from "~/utils/withAuth";
 
-export const loader: LoaderFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  const accessToken = session.get("accessToken");
-
-  supabase.auth.setAuth(accessToken);
-
-  const { data: entries } = await supabase.from("entries").select("*");
-  return json({ entries });
+export type Entry = {
+  id: string;
+  created_at: string;
+  title: string | null;
+  content: string;
+  date: string;
+  user_id: string;
 };
 
-type ContextUser = {
-  user: User | null;
-};
+export const loader: LoaderFunction = withAuth(
+  async ({ supabaseClient, user }) => {
+    const { data: entries } = await supabaseClient.from("entries").select("*");
+    return json({ entries, user });
+  }
+);
 
 export default function Index() {
-  const { user } = useOutletContext<ContextUser>();
-  console.log({ user });
-  const { entries } = useLoaderData();
+  const { entries, user } = useLoaderData<{ entries: Entry[]; user: User }>();
 
   return (
     <>
-      <button onClick={() => supabase.auth.signOut()}>Logout</button>
-      <button onClick={() => supabase.auth.signIn({ provider: "github" })}>
-        Login
-      </button>
-      <pre>{JSON.stringify(entries, null, 2)}</pre>
+      {user && <button onClick={() => supabase.auth.signOut()}>Logout</button>}
+      {!user && (
+        <button onClick={() => supabase.auth.signIn({ provider: "github" })}>
+          Login
+        </button>
+      )}
+      {entries.map((entry) => (
+        <div key={entry.id}>
+          <Link to={`/entries/${entry.id}`}>{entry.title}</Link>
+        </div>
+      ))}
     </>
   );
 }
