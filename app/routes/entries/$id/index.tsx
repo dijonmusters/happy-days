@@ -20,8 +20,8 @@ const EntryDetail = () => {
   return (
     <div>
       <Link to="edit">Edit</Link>
-      <h1>{entry.title}</h1>
       <p>{entry.date}</p>
+      <h1>{entry.title}</h1>
       <p>{entry.content}</p>
     </div>
   );
