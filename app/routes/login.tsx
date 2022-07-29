@@ -15,7 +15,7 @@ const Login = () => {
   };
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center">
+    <div className="w-full min-h-screen flex items-center justify-center bg-gray-100">
       <button
         className="bg-gray-700 hover:bg-gray-800 text-base text-white flex items-center rounded-sm px-6 py-3 duration-200 transition-color"
         onClick={handleSignIn}
