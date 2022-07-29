@@ -19,7 +19,11 @@ export const loader = withAuth(async ({ supabaseClient, params }) => {
 
 const EntryEdit = () => {
   const { entry } = useLoaderData<{ entry: Entry }>();
-  return <EntryForm entry={entry} />;
+  return (
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gray-100">
+      <EntryForm entry={entry} />
+    </div>
+  );
 };
 
 export default EntryEdit;
