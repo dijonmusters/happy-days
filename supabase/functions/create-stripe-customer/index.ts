@@ -1,27 +1,36 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe?target=deno";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@1.35.5";
 
-console.log("Hello from Functions!");
+const stripe = Stripe(Deno.env.get("STRIPE_KEY")!, {
+  httpClient: Stripe.createFetchHttpClient(),
+});
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+);
 
 serve(async (req) => {
-  const { name, record } = await req.json();
-  const data = {
-    message: `Hello ${name}!`,
-    record,
-  };
+  const { record } = await req.json();
 
-  console.log({ record });
+  const customer = await stripe.customers.create({
+    email: record.email,
+    metadata: {
+      supabase_id: record.id,
+    },
+  });
 
-  return new Response(JSON.stringify(data), {
+  const { data, error } = await supabase
+    .from("user_data")
+    .update({
+      stripe_customer_id: customer.id,
+    })
+    .match({ id: record.id });
+
+  console.log({ data, error, customer });
+
+  return new Response(JSON.stringify({ customer_stripe_id: customer.id }), {
     headers: { "Content-Type": "application/json" },
   });
 });
-
-// To invoke:
-// curl -i --location --request POST 'http://localhost:54321/functions/v1/' \
-//   --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24ifQ.625_WdcF3KHqz5amU0x2X5WWHP-OEs_4qj0ssLNHzTs' \
-//   --header 'Content-Type: application/json' \
-//   --data '{"name":"Functions"}'
