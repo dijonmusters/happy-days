@@ -1,12 +1,16 @@
 import EntryForm from "~/components/entry-form";
+import Navigation from "~/components/navigation";
 
 export { action } from "~/components/entry-form";
 
 const NewEntry = () => {
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gray-100">
-    <EntryForm />
-    </div>
+    <>
+    <Navigation/>
+      <div className="w-full flex items-center justify-center">
+        <EntryForm />
+      </div>
+    </>
     );
 };
 

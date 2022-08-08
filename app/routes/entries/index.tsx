@@ -1,8 +1,8 @@
 import { json, LoaderFunction } from "@remix-run/cloudflare";
 import { Link, useLoaderData } from "@remix-run/react";
 import { User } from "@supabase/supabase-js";
-import supabase from "~/utils/supabase";
 import withAuth from "~/utils/withAuth";
+import Navigation from "~/components/navigation";
 
 export type Entry = {
   id: string;
@@ -25,7 +25,7 @@ export default function EntriesList() {
 
   return (
     <>
-      <button onClick={() => supabase.auth.signOut()}>Logout</button>
+      <Navigation/>
       <Link to="new">New entry</Link>
       {entries.map((entry) => (
         <div key={entry.id}>
