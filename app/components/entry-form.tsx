@@ -1,56 +1,84 @@
-import { redirect } from "@remix-run/cloudflare";
+import {
+  redirect,
+  unstable_parseMultipartFormData,
+  unstable_composeUploadHandlers,
+  unstable_createMemoryUploadHandler,
+} from "@remix-run/cloudflare";
 import { Form } from "@remix-run/react";
 import { Entry } from "~/routes/entries";
-import supabase from "~/utils/supabase";
 import withAuth from "~/utils/withAuth";
 
 type EntryFormProps = {
   entry?: Entry;
 };
 
+const asyncIterableToStream = (asyncIterable: AsyncIterable<Uint8Array>) => {
+  return new ReadableStream({
+    async pull(controller) {
+      for await (const entry of asyncIterable) {
+        controller.enqueue(entry);
+      }
+      controller.close();
+    },
+  });
+};
+
 export const action = withAuth(async ({ supabaseClient, request, user }) => {
-  const entry = Object.fromEntries(await request.formData());
+  const uploadHandler = unstable_composeUploadHandlers(async (file) => {
+    if (file.name !== "files") {
+      return undefined;
+    }
+
+    const stream = asyncIterableToStream(file.data);
+
+    const { data, error } = await supabaseClient.storage
+      .from("assets")
+      .upload(`${user.id}/${file.filename}`, stream, {
+        contentType: file.contentType,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    return data?.Key;
+  }, unstable_createMemoryUploadHandler());
+
+  // const uploadHandler = unstable_createMemoryUploadHandler({
+  //   maxPartSize: 20_000_000,
+  // });
+
+  const formData = await unstable_parseMultipartFormData(
+    request,
+    uploadHandler
+  );
+
+  const id = formData.get("id")?.toString();
+  const date = formData.get("date")?.toString();
+  const title = formData.get("title")?.toString();
+  const content = formData.get("content")?.toString();
+  const filePaths = formData.getAll("files");
+
+  console.log({ filePaths });
 
   const { data: entryData, error: entryError } = await supabaseClient
     .from<Entry>("entries")
-    .upsert(entry)
+    .upsert({
+      id,
+      date,
+      title,
+      content,
+    })
     .single();
 
   if (entryError) {
     throw entryError;
   }
 
-  // const { data: storageData, error: storageError } =
-  //   await supabaseClient.storage
-  //     .from("assets")
-  //     .upload(`${user.id}/${entryData.id}/${files[0].filename}`, files[0]);
-
-  // if (storageError) {
-  //   throw storageError;
-  // }
-
-  console.log({ entryData });
-
   return redirect(`/entries/${entryData.id}`);
 });
 
 const EntryForm = ({ entry }: EntryFormProps) => {
-  const onUpload = async (e) => {
-    const user = supabase.auth.user();
-
-    if (!user) {
-      return;
-    }
-
-    const { data, error } = await supabase.storage
-      .from("assets")
-      .upload(`${user.id}/test/${e.target.files[0].name}`, e.target.files[0], {
-        contentType: e.target.files[0].type,
-      });
-
-    console.log({ error, data });
-  };
-
   return (
     <Form
       className="flex flex-col w-full md:w-1/2 gap-8 m-4"
@@ -108,7 +136,6 @@ const EntryForm = ({ entry }: EntryFormProps) => {
           type="file"
           multiple={true}
           name="files"
-          onChange={onUpload}
         />
         <label
           className="absolute -top-3 left-2 -translate-y-1/2 transition-all peer-placeholder-shown:top-6 peer-placeholder-shown:text-gray-500 peer-focus:-top-3 pointer-events-none"
