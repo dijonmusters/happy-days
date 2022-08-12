@@ -5,7 +5,7 @@ import {
   unstable_createMemoryUploadHandler,
 } from "@remix-run/cloudflare";
 import { Form } from "@remix-run/react";
-import { Entry } from "~/routes/entries";
+import { Entry } from "~/types";
 import withAuth from "~/utils/withAuth";
 
 type EntryFormProps = {
@@ -31,17 +31,19 @@ export const action = withAuth(async ({ supabaseClient, request, user }) => {
 
     const stream = asyncIterableToStream(file.data);
 
+    const filepath = `${user.id}/${file.filename}`;
     const { data, error } = await supabaseClient.storage
       .from("assets")
-      .upload(`${user.id}/${file.filename}`, stream, {
+      .upload(filepath, stream, {
         contentType: file.contentType,
+        upsert: true,
       });
 
     if (error) {
       throw error;
     }
 
-    return data?.Key;
+    return filepath;
   }, unstable_createMemoryUploadHandler());
 
   // const uploadHandler = unstable_createMemoryUploadHandler({
@@ -57,9 +59,7 @@ export const action = withAuth(async ({ supabaseClient, request, user }) => {
   const date = formData.get("date")?.toString();
   const title = formData.get("title")?.toString();
   const content = formData.get("content")?.toString();
-  const filePaths = formData.getAll("files");
-
-  console.log({ filePaths });
+  const filePaths = formData.getAll("files").map((file) => file.toString());
 
   const { data: entryData, error: entryError } = await supabaseClient
     .from<Entry>("entries")
@@ -68,6 +68,7 @@ export const action = withAuth(async ({ supabaseClient, request, user }) => {
       date,
       title,
       content,
+      asset_urls: filePaths,
     })
     .single();
 
