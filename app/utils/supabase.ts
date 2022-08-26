@@ -9,6 +9,7 @@ declare global {
   }
   const SUPABASE_URL: string;
   const SUPABASE_ANON_KEY: string;
+  const STRIPE_SECRET: string;
 }
 
 const isClient = typeof window !== "undefined";
