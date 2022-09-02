@@ -63,15 +63,17 @@ const EntryDetail = () => {
             />
           </svg>
         </Link>
-        <div className=" w-full md:w-1/2 bg-white rounded border border-gray-200 shadow-sm m-4">
+        <div className="w-full md:w-1/2 bg-white rounded border border-gray-200 shadow-sm m-4">
           <div className="p-5">
             <h5 className="mb-2 text-2xl font-bold text-blue-400">
               {entry.title}
             </h5>
             <p className="mb-2 font-normal text-gray-700">{entry.content}</p>
-            {entry.asset_urls.map((url) => (
-              <img key={url} src={url} />
-            ))}
+            <div className="flex flex-col md:flex-row w-full gap-2 mb-2">
+               {entry.asset_urls.map((url) => (
+                   <img className="w-full border-4 border-blue-300 hover:border-pink-300 rounded" key={url} src={url} />
+               ))}
+             </div>
             <Link
               to="edit"
               className="inline-flex items-center py-2 px-3 text-sm font-medium text-center text-white bg-slate-600 rounded hover:bg-slate-800 focus:outline-none"
