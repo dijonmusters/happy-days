@@ -5,11 +5,13 @@ declare global {
     env: {
       SUPABASE_URL: string;
       SUPABASE_ANON_KEY: string;
+      STRIPE_PUBLIC_KEY: string;
     };
   }
   const SUPABASE_URL: string;
   const SUPABASE_ANON_KEY: string;
   const STRIPE_SECRET: string;
+  const STRIPE_PUBLIC_KEY: string;
 }
 
 const isClient = typeof window !== "undefined";

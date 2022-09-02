@@ -47,10 +47,13 @@ const Index = () => {
       }
     );
 
-    console.log(data, error);
+    if (error) {
+      console.error(error);
+      return;
+    }
 
-    // TODO! get session is from edge function response
-    // TODO! redirectToCheckout
+    const stripe = await loadStripe(window.env.STRIPE_PUBLIC_KEY);
+    await stripe?.redirectToCheckout({ sessionId: data?.id });
   };
 
   return (
@@ -77,8 +80,13 @@ const Index = () => {
       </div>
 
       <div className="w-full flex flex-col md:flex-row gap-4 items-center justify-center p-2">
-      {plans.map((plan) => (
-          <div key={plan.id} className={`${plan.name === 'Standard' && 'bg-pink-300'} bg-blue-300 rounded-xl text-slate-800`}>
+        {plans.map((plan) => (
+          <div
+            key={plan.id}
+            className={`${
+              plan.name === "Standard" && "bg-pink-300"
+            } bg-blue-300 rounded-xl text-slate-800`}
+          >
             <div className="p-8 mx-3 mt-3 rounded-t-xl bg-white">
               <div className="text-center uppercase">{plan.name}</div>
               <h2 className="mt-10 font-serif text-5xl text-center">
@@ -88,8 +96,12 @@ const Index = () => {
               <div className="flex justify-center">
                 <button
                   onClick={handleSubscription(plan.id)}
-                  className={`border-blue-400 hover:bg-blue-400 inline-block px-10 py-3 my-6 text-center border rounded-lg duration-200 hover:text-white cursor-pointer 
-                  ${plan.name === 'Standard' && 'bg-pink-300 border-pink-400 hover:bg-pink-400 hover:border-pink-400'}`}>
+                  className={`border-blue-400 hover:bg-blue-400 inline-block px-10 py-3 my-6 text-center border rounded-lg duration-200 hover:text-white cursor-pointer
+                  ${
+                    plan.name === "Standard" &&
+                    "bg-pink-300 border-pink-400 hover:bg-pink-400 hover:border-pink-400"
+                  }`}
+                >
                   Purchase
                 </button>
               </div>
@@ -111,7 +123,14 @@ const Index = () => {
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M5 12l5 5l10 -10" />
                   </svg>
-                  <span className="ml-1">{plan.name === 'Free' ? 10 : plan.name === 'Standard' ? '50' : 'Unlimited'} Entries</span>
+                  <span className="ml-1">
+                    {plan.name === "Free"
+                      ? 10
+                      : plan.name === "Standard"
+                      ? "50"
+                      : "Unlimited"}{" "}
+                    Entries
+                  </span>
                 </div>
               </div>
             </div>

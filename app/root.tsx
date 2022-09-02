@@ -24,7 +24,7 @@ export const meta: MetaFunction = () => ({
 });
 
 export const loader = () => {
-  return json({ env: { SUPABASE_URL, SUPABASE_ANON_KEY } });
+  return json({ env: { SUPABASE_URL, SUPABASE_ANON_KEY, STRIPE_PUBLIC_KEY } });
 };
 
 export default function App() {
