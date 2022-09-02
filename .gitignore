@@ -11,4 +11,5 @@ node_modules
 **/supabase/.branches
 **/supabase/.temp
 
-
+# Tailwind
+app/styles/app.css
