@@ -4,6 +4,7 @@ import { User } from "@supabase/supabase-js";
 import withAuth from "~/utils/withAuth";
 import Navigation from "~/components/navigation";
 import { Entry } from "~/types";
+import dayjs from "dayjs";
 
 export const loader: LoaderFunction = withAuth(
   async ({ supabaseClient, user }) => {
@@ -59,7 +60,7 @@ export default function EntriesList() {
                   ></img>
                 </div>
                 <div className="flex flex-col justify-center gap-1 p-2">
-                    <div className="text-md text-blue-400">{entry.date}</div>
+                    <div className="text-md text-blue-400">{dayjs(entry.date).format('DD MMM, YYYY HH:mm')}</div>
                     <div className="font-bold text-xl">{entry.title}</div>
                     <p className="hidden md:block text-gray-700 text-base">
                       {entry.content}
