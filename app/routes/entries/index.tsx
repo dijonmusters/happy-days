@@ -4,6 +4,7 @@ import { User } from "@supabase/supabase-js";
 import withAuth from "~/utils/withAuth";
 import Navigation from "~/components/navigation";
 import { Entry } from "~/types";
+import dayjs from "dayjs";
 
 export const loader: LoaderFunction = withAuth(
   async ({ supabaseClient, user }) => {
@@ -44,12 +45,9 @@ export default function EntriesList() {
       <div className="container grid grid-cols-1 sm:grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 p-2 md:p-0">
         <div className="md:col-start-1 md:col-span-2 lg:col-start-1 lg:col-span-2 order-2 lg:order-none mb-4">
           {entries.map((entry) => (
-            <Link
-              to={`/entries/${entry.id}`}
-              key={entry.id}
-            >
-            <div className="flex space-x-2 rounded-md shadow-sm mt-2 h-28 bg-white hover:bg-slate-50">
-              <div className="w-44 h-28">
+            <Link to={`/entries/${entry.id}`} key={entry.id}>
+              <div className="flex space-x-2 rounded-md shadow-sm mt-2 h-28 bg-white hover:bg-slate-50">
+                <div className="w-44 h-28">
                   <img
                     className="w-full h-full rounded-l-md"
                     src={
@@ -59,13 +57,15 @@ export default function EntriesList() {
                   ></img>
                 </div>
                 <div className="flex flex-col justify-center gap-1 p-2">
-                    <div className="text-md text-blue-400">{entry.date}</div>
-                    <div className="font-bold text-xl">{entry.title}</div>
-                    <p className="hidden md:block text-gray-700 text-base">
-                      {entry.content}
-                    </p>
+                  <div className="text-md text-blue-400">
+                    {dayjs(entry.date).format("DD MMM, YYYY HH:mm")}
+                  </div>
+                  <div className="font-bold text-xl">{entry.title}</div>
+                  <p className="hidden md:block text-gray-700 text-base">
+                    {entry.content}
+                  </p>
                 </div>
-            </div>
+              </div>
             </Link>
           ))}
         </div>
@@ -91,21 +91,21 @@ export default function EntriesList() {
               </svg>
               Add New Entry
             </Link>
-              <div className="hidden md:flex md:flex-col space-y-2 mt-3 p-4 w-full bg-white shadow-sm">
-                <div className="text-xl">
-                  Enjoying <span className="text-pink-400">Happy</span>{" "}
-                  <span className="text-blue-400">Days</span>?
-                </div>
-                <div className="text-gray-500 text-sm">
-                  Our paid plans give you access to a dedicated Account Manager,
-                  unlocks premium features and much more.
-                </div>
-                <Link
-                  to="/"
-                  className="px-4 py-2 border border-pink-400 hover:bg-pink-400 text-pink-400 hover:text-white rounded text-center"
-                >
-                  Upgrade
-                </Link>
+            <div className="hidden md:flex md:flex-col space-y-2 mt-3 p-4 w-full bg-white shadow-sm">
+              <div className="text-xl">
+                Enjoying <span className="text-pink-400">Happy</span>{" "}
+                <span className="text-blue-400">Days</span>?
+              </div>
+              <div className="text-gray-500 text-sm">
+                Our paid plans give you access to a dedicated Account Manager,
+                unlocks premium features and much more.
+              </div>
+              <Link
+                to="/"
+                className="px-4 py-2 border border-pink-400 hover:bg-pink-400 text-pink-400 hover:text-white rounded text-center"
+              >
+                Upgrade
+              </Link>
             </div>
           </div>
         </div>

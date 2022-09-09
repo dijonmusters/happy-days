@@ -19,6 +19,7 @@
     "@stripe/stripe-js": "^1.35.0",
     "@supabase/supabase-js": "^1.35.4",
     "cross-env": "^7.0.3",
+    "dayjs": "^1.11.5",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "stripe": "^10.5.0"
