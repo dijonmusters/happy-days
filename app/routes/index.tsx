@@ -84,9 +84,8 @@ const Index = () => {
           <div
             key={plan.id}
             className={`${
-              plan.name === "Standard" && "bg-pink-300"
-            } bg-blue-300 rounded-xl text-slate-800`}
-          >
+              plan.name === "Standard" ? "bg-pink-300" : "bg-blue-300"
+            } rounded-xl text-slate-800`}>
             <div className="p-8 mx-3 mt-3 rounded-t-xl bg-white">
               <div className="text-center uppercase">{plan.name}</div>
               <h2 className="mt-10 font-serif text-5xl text-center">
