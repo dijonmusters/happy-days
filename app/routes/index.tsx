@@ -3,39 +3,60 @@ import Navigation from "~/components/navigation";
 import Stripe from "stripe";
 import { loadStripe } from "@stripe/stripe-js";
 import supabase from "~/utils/supabase";
+import withAuth from "~/utils/withAuth";
 
-export const loader = async () => {
-  const stripe = new Stripe(STRIPE_SECRET, {
-    httpClient: Stripe.createFetchHttpClient(),
-    apiVersion: "2022-08-01",
-  });
+export const loader = withAuth(
+  async ({ user, supabaseClient }) => {
+    const stripe = new Stripe(STRIPE_SECRET, {
+      httpClient: Stripe.createFetchHttpClient(),
+      apiVersion: "2022-08-01",
+    });
 
-  const { data: prices } = await stripe.prices.list();
+    const { data: prices } = await stripe.prices.list();
 
-  const unsortedPlans = await Promise.all(
-    prices.map(async (price) => {
-      const product = await stripe.products.retrieve(String(price.product));
+    const unsortedPlans = await Promise.all(
+      prices.map(async (price) => {
+        const product = await stripe.products.retrieve(String(price.product));
 
-      if (price?.unit_amount === undefined || price?.unit_amount === null) {
-        throw new Error(`Price ${price.id} has no unit amount`);
-      }
+        if (price?.unit_amount === undefined || price?.unit_amount === null) {
+          throw new Error(`Price ${price.id} has no unit amount`);
+        }
+
+        return {
+          id: price.id,
+          name: product.name,
+          price: price?.unit_amount / 100,
+          currency: price.currency,
+        };
+      })
+    );
+
+    const plans = unsortedPlans.sort((a, b) => a.price - b.price);
+
+    if (user) {
+      const { data } = await supabaseClient
+        .from("user_data")
+        .select("subscription_tier")
+        .single();
 
       return {
-        id: price.id,
-        name: product.name,
-        price: price?.unit_amount / 100,
-        currency: price.currency,
+        subscriptionTier: data?.subscription_tier || "FREE",
+        plans,
       };
-    })
-  );
+    }
 
-  const plans = unsortedPlans.sort((a, b) => a.price - b.price);
-
-  return { plans };
-};
+    return { plans, subscriptionTier: "FREE" };
+  },
+  { required: false }
+);
 
 const Index = () => {
-  const { plans } = useLoaderData<Awaited<ReturnType<typeof loader>>>();
+  const { plans, subscriptionTier } =
+    useLoaderData<Awaited<ReturnType<typeof loader>>>();
+
+  console.log({ subscriptionTier });
+
+  const shouldRenderManageButton = subscriptionTier !== "FREE";
 
   const handleSubscription = (planId: string) => async () => {
     const { data, error } = await supabase.functions.invoke(
@@ -54,6 +75,19 @@ const Index = () => {
 
     const stripe = await loadStripe(window.env.STRIPE_PUBLIC_KEY);
     await stripe?.redirectToCheckout({ sessionId: data?.id });
+  };
+
+  const handleManageSubscription = async () => {
+    const { data, error } = await supabase.functions.invoke(
+      "stripe-customer-portal"
+    );
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    window.location.href = data?.url;
   };
 
   return (
@@ -80,7 +114,7 @@ const Index = () => {
       </div>
 
       <div className="w-full flex flex-col md:flex-row gap-4 items-center justify-center p-2">
-        {plans.map((plan) => (
+        {plans.map((plan: any) => (
           <div
             key={plan.id}
             className={`${
@@ -94,16 +128,29 @@ const Index = () => {
               </h2>
               <h3 className="mt-2 text-center">Per month</h3>
               <div className="flex justify-center">
-                <button
-                  onClick={handleSubscription(plan.id)}
-                  className={`border-blue-400 hover:bg-blue-400 inline-block px-10 py-3 my-6 text-center border rounded-lg duration-200 hover:text-white cursor-pointer
+                {shouldRenderManageButton ? (
+                  <button
+                    onClick={handleManageSubscription}
+                    className={`border-blue-400 hover:bg-blue-400 inline-block px-10 py-3 my-6 text-center border rounded-lg duration-200 hover:text-white cursor-pointer
                   ${
                     plan.name === "Standard" &&
                     "bg-pink-300 border-pink-400 hover:bg-pink-400 hover:border-pink-400"
                   }`}
-                >
-                  Purchase
-                </button>
+                  >
+                    Manage subscription
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSubscription(plan.id)}
+                    className={`border-blue-400 hover:bg-blue-400 inline-block px-10 py-3 my-6 text-center border rounded-lg duration-200 hover:text-white cursor-pointer
+                  ${
+                    plan.name === "Standard" &&
+                    "bg-pink-300 border-pink-400 hover:bg-pink-400 hover:border-pink-400"
+                  }`}
+                  >
+                    Purchase
+                  </button>
+                )}
               </div>
             </div>
             <div className="border-t border-blue-300"></div>

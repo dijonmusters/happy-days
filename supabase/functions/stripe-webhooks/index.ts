@@ -1,9 +1,15 @@
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@9.6.0?target=deno&no-check";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@1.35.5";
 
 const stripe = Stripe(Deno.env.get("STRIPE_KEY"), {
   httpClient: Stripe.createFetchHttpClient(),
 });
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+);
 
 // This is needed in order to use the Web Crypto API in Deno.
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
@@ -49,25 +55,32 @@ serve(async (request) => {
     return new Response(err.message, { status: 400 });
   }
 
-  console.log({ type: retrievedEvent.type });
+  const subscription = retrievedEvent.data.object;
 
-  // switch (retrievedEvent.type) {
-  //   case "customer.subscription.created":
-  //     const subscription = retrievedEvent.data.object;
-  //     // Then define and call a function to handle the retrievedEvent customer.subscription.created
-  //     break;
-  //   case "customer.subscription.deleted":
-  //     const subscription = retrievedEvent.data.object;
-  //     // Then define and call a function to handle the retrievedEvent customer.subscription.deleted
-  //     break;
-  //   case "customer.subscription.updated":
-  //     const subscription = retrievedEvent.data.object;
-  //     // Then define and call a function to handle the retrievedEvent customer.subscription.updated
-  //     break;
-  //   // ... handle other retrievedEvent types
-  //   default:
-  //     console.log(`Unhandled retrievedEvent type ${retrievedEvent.type}`);
-  // }
+  switch (retrievedEvent.type) {
+    case "customer.subscription.deleted":
+      await supabase
+        .from("user_data")
+        .update({
+          subscription_tier: "FREE",
+        })
+        .match({ stripe_customer_id: subscription.customer });
+      // Then define and call a function to handle the retrievedEvent customer.subscription.deleted
+      break;
+    case "customer.subscription.updated":
+      const product = await stripe.products.retrieve(subscription.plan.product);
+      await supabase
+        .from("user_data")
+        .update({
+          subscription_tier: product.name.toUpperCase(),
+        })
+        .match({ stripe_customer_id: subscription.customer });
+      // Then define and call a function to handle the retrievedEvent customer.subscription.updated
+      break;
+    // ... handle other retrievedEvent types
+    default:
+      console.log(`Unhandled retrievedEvent type ${retrievedEvent.type}`);
+  }
 
   return new Response(JSON.stringify({ id: retrievedEvent.id, status: "ok" }), {
     status: 200,

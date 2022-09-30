@@ -31,7 +31,7 @@ export const action = withAuth(async ({ supabaseClient, request, user }) => {
 
     const stream = asyncIterableToStream(file.data);
 
-    const filepath = `${user.id}/${file.filename}`;
+    const filepath = `${user!.id}/${file.filename}`;
     const { data, error } = await supabaseClient.storage
       .from("assets")
       .upload(filepath, stream, {
