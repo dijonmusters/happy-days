@@ -38,7 +38,7 @@ serve(async (req) => {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: stripe_customer_id,
-    return_url: "http://localhost:8787/",
+    return_url: "https://remix-cloudflare-workers.jonmeyers.workers.dev/",
   });
 
   return new Response(JSON.stringify({ url: session.url }), {

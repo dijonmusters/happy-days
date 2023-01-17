@@ -4,8 +4,9 @@ import {
   unstable_composeUploadHandlers,
   unstable_createMemoryUploadHandler,
 } from "@remix-run/cloudflare";
-import { Form } from "@remix-run/react";
+import { Form, useLocation, useNavigate } from "@remix-run/react";
 import { Entry } from "~/types";
+import supabase from "~/utils/supabase";
 import withAuth from "~/utils/withAuth";
 
 type EntryFormProps = {
@@ -13,23 +14,36 @@ type EntryFormProps = {
 };
 
 const asyncIterableToStream = (asyncIterable: AsyncIterable<Uint8Array>) => {
-  return new ReadableStream({
-    async pull(controller) {
-      for await (const entry of asyncIterable) {
-        controller.enqueue(entry);
-      }
-      controller.close();
-    },
-  });
+  console.log("inside stream");
+
+  try {
+    return new ReadableStream({
+      async pull(controller) {
+        for await (const entry of asyncIterable) {
+          controller.enqueue(entry);
+        }
+        controller.close();
+      },
+    });
+  } catch (e) {
+    console.log(e);
+    throw new Error(e);
+  }
 };
 
 export const action = withAuth(async ({ supabaseClient, request, user }) => {
   const uploadHandler = unstable_composeUploadHandlers(async (file) => {
+    console.log("start of upload handler");
     if (file.name !== "files") {
+      console.log("not a file");
       return undefined;
     }
 
+    console.log("is a file");
+
     const stream = asyncIterableToStream(file.data);
+
+    console.log("stream creation successful");
 
     const filepath = `${user!.id}/${file.filename}`;
     const { data, error } = await supabaseClient.storage
@@ -43,6 +57,8 @@ export const action = withAuth(async ({ supabaseClient, request, user }) => {
       throw error;
     }
 
+    console.log("end of upload handler");
+
     return filepath;
   }, unstable_createMemoryUploadHandler());
 
@@ -54,6 +70,8 @@ export const action = withAuth(async ({ supabaseClient, request, user }) => {
     request,
     uploadHandler
   );
+
+  console.log("upload handler successful");
 
   const id = formData.get("id")?.toString();
   const date = formData.get("date")?.toString();
@@ -72,6 +90,8 @@ export const action = withAuth(async ({ supabaseClient, request, user }) => {
     })
     .single();
 
+  console.log("supabase upsert successful");
+
   if (entryError) {
     throw entryError;
   }
@@ -80,11 +100,52 @@ export const action = withAuth(async ({ supabaseClient, request, user }) => {
 });
 
 const EntryForm = ({ entry }: EntryFormProps) => {
+  const navigate = useNavigate();
+  const addEntry = async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+
+    const id = formData.get("id")?.toString();
+    const date = formData.get("date")?.toString();
+    const title = formData.get("title")?.toString();
+    const content = formData.get("content")?.toString();
+    const files = e.target.files.files;
+
+    console.log({ files });
+
+    const userId = supabase.auth.user()?.id;
+
+    const filepath = `${userId}/${files[0].filename}`;
+
+    const { data, error } = await supabase.storage
+      .from("assets")
+      .upload(filepath, files[0], {
+        upsert: true,
+      });
+
+    console.log({ error });
+
+    const { data: entryData, error: entryError } = await supabase
+      .from<Entry>("entries")
+      .upsert({
+        id,
+        date,
+        title,
+        content,
+        asset_urls: [filepath],
+      })
+      .single();
+
+    console.log({ entryError });
+
+    navigate(`/entries/${entryData?.id}`);
+  };
+
   return (
-    <Form
+    <form
       className="flex flex-col w-full md:w-1/2 gap-8 m-4"
-      method="post"
-      encType="multipart/form-data"
+      onSubmit={addEntry}
     >
       {entry && <input type="hidden" name="id" value={entry.id} />}
       <div className="relative">
@@ -151,7 +212,7 @@ const EntryForm = ({ entry }: EntryFormProps) => {
       >
         Submit
       </button>
-    </Form>
+    </form>
   );
 };
 

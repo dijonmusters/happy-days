@@ -49,8 +49,10 @@ serve(async (req) => {
         },
       ],
     },
-    success_url: "http://localhost:8787/success",
-    cancel_url: "http://localhost:8787/cancel",
+    // COMMUNITY TODO: Work out whether in prod or dev to use the correct URL
+    success_url:
+      "https://remix-cloudflare-workers.jonmeyers.workers.dev/success",
+    cancel_url: "https://remix-cloudflare-workers.jonmeyers.workers.dev/cancel",
   });
 
   return new Response(JSON.stringify({ id: session.id }), {
